@@ -10,6 +10,23 @@ end
 # To to compare player guess with code, count key pegs
 # Meth: count_big_pegs, count_small_pegs
 module Gamemaster
+  # Match position AND color
+  def self.count_big_pegs(guess, code_to_guess)
+    big_pegs = 0
+    guess.each_with_index do |item, index|
+      big_pegs += 1 if item == code_to_guess[index]
+    end
+    big_pegs
+  end
+
+  # Match color only
+  def self.count_small_pegs(guess, code_to_guess)
+    small_pegs = 0
+    guess.each do |item|
+      small_pegs += 1 if code_to_guess.include?(item)
+    end
+    small_pegs
+  end
 end
 
 # To pick random color combination
@@ -56,11 +73,13 @@ class Codebreaker
     loop do
       print '> '
       guess = gets.chomp
-      break guess if validate_guess_length(guess, code) &&
-                     validate_guess_duplicates(guess) &&
-                     validate_guess_content(guess, code)
+      break guess.chars if validate_guess_length(guess, code) &&
+                           validate_guess_duplicates(guess) &&
+                           validate_guess_content(guess, code)
     end
   end
+
+  private
 
   def validate_guess_length(guess, code)
     if guess.length != code.code_length
@@ -106,10 +125,23 @@ end
 # Meth: check_for_try_limit, check_for_win
 # LCycle: check_for_try_limit => check_for_win
 class Game
+  include Gamemaster
+  def initialize
+    @code = Codemaker.new
+    @code_to_guess = @code.choose_code
+  end
+
+  def guess_try
+    guess = Codebreaker.new.ask_for_guess(@code)
+    Gamemaster.count_small_pegs(guess, @code_to_guess)
+    Gamemaster.count_big_pegs(guess, @code_to_guess)
+  end
 end
 
-code = Codemaker.new
+# code = Codemaker.new
 # p code.single_random_color
-p code.choose_code
-guess = Codebreaker.new
-p guess.ask_for_guess(code)
+# p code.choose_code
+# guess = Codebreaker.new
+# p guess.ask_for_guess(code)
+game = Game.new
+game.guess_try
