@@ -17,11 +17,11 @@ end
 # Meth: single_random_color, choose_code
 # LCycle: single_random_color => choose_code
 class Codemaker
-  attr_reader :color_set, :code
+  attr_reader :color_set, :code, :code_length
 
   def initialize
     @color_set = %w[
-      red green blue yellow cyan magenta lime pink
+      r g b y c m l p
     ]
     @code_length = 4
     @code = []
@@ -44,6 +44,54 @@ end
 # Meth: ask_for_guess, validate_guess
 # LCycle: ask_for_guess => validate_guess
 class Codebreaker
+  attr_reader :guess
+
+  def initialize
+    @guess = ''
+  end
+
+  def ask_for_guess(code)
+    puts "Computer made a #{code.code_length}-piece code."
+    puts 'Try to guess it. Use first letters of colors. Examples: rgby, plbr.'
+    loop do
+      print '> '
+      guess = gets.chomp
+      break guess if validate_guess_length(guess, code) &&
+                     validate_guess_duplicates(guess) &&
+                     validate_guess_content(guess, code)
+    end
+  end
+
+  def validate_guess_length(guess, code)
+    if guess.length != code.code_length
+      puts 'Make sure you entered correct number of letters.'
+      false
+    else
+      true
+    end
+  end
+
+  def validate_guess_content(guess, code)
+    guess_array = []
+    guess.each_char do |char|
+      guess_array.push(char) if code.color_set.join.include?(char)
+    end
+    if guess_array.length != code.code_length
+      puts 'Use only first and downcased letters of related colors.'
+      false
+    else
+      true
+    end
+  end
+
+  def validate_guess_duplicates(guess)
+    if guess.chars.length != guess.chars.uniq.length
+      puts 'Computer was not allowed duplicates in code. Enter unique letters.'
+      false
+    else
+      true
+    end
+  end
 end
 
 # To show game current state - previous guess attempts with key pegs counted
@@ -63,3 +111,5 @@ end
 code = Codemaker.new
 # p code.single_random_color
 p code.choose_code
+guess = Codebreaker.new
+p guess.ask_for_guess(code)
