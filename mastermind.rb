@@ -5,6 +5,64 @@
 # Meth: print_greet, print_rules, print_game_over, print_win, print_colors,
 # print_status
 module Messages
+  def print_greet
+    logo = <<~HEREDOC
+
+      ███    ███  █████  ███████ ████████ ███████ ██████  ███    ███ ██ ███    ██ ██████
+      ████  ████ ██   ██ ██         ██    ██      ██   ██ ████  ████ ██ ████   ██ ██   ██ 
+      ██ ████ ██ ███████ ███████    ██    █████   ██████  ██ ████ ██ ██ ██ ██  ██ ██   ██ 
+      ██  ██  ██ ██   ██      ██    ██    ██      ██   ██ ██  ██  ██ ██ ██  ██ ██ ██   ██ 
+      ██      ██ ██   ██ ███████    ██    ███████ ██   ██ ██      ██ ██ ██   ████ ██████  
+
+    HEREDOC
+    puts logo
+  end
+
+  def print_rules
+    rules = <<~HEREDOC
+      The object of the game is to guess a secret code consisting of a series of
+      #{@code.code_length} colors pegs. Each guess results in narrowing down the
+      possibilities of the code. You won the game if you manage to guess the
+      code in less than #{@tries} tries.
+
+      Colors of the game are red, blue, green, cyan, magenta, lime, pink, yellow.
+      Enter your guess using only first characters of related colors.
+      Each guess evaluated by two numbers. First one shows how many colors you
+      guessed right not concerning their possition in code. Second one shows
+      number of exact matches - right colors in right positions.
+
+      Take your time. Try to use as less turns as possible. Good luck!
+    HEREDOC
+    puts rules
+  end
+
+  def print_game_over
+    puts 'You have no tries left, but don\'t give in to discouragement.'
+    puts 'Come on! Try again. You\'ll definitely crack it next time!'
+  end
+
+  def print_win
+    puts "Well done! You managed to guess the code with #{@tries} tries left!"
+  end
+
+  def print_colors
+    colors = <<~HEREDOC
+      Use following letters for colors
+      r for red
+      g for green
+      b for blue
+      y for yellow
+      c for cyan
+      m for magenta
+      l for lime
+      p for pink
+    HEREDOC
+    puts colors
+  end
+
+  def print_status
+    puts "You have #{@tries} tries left."
+  end
 end
 
 # To to compare player guess with code, count key pegs
@@ -72,7 +130,7 @@ class Codebreaker
     puts 'Try to guess it. Use first letters of colors. Examples: rgby, plbr.'
     loop do
       print '> '
-      guess = gets.chomp
+      guess = gets.chomp.downcase
       break guess.chars if validate_guess_length(guess, code) &&
                            validate_guess_duplicates(guess) &&
                            validate_guess_content(guess, code)
@@ -96,7 +154,7 @@ class Codebreaker
       guess_array.push(char) if code.color_set.join.include?(char)
     end
     if guess_array.length != code.code_length
-      puts 'Use only first and downcased letters of related colors.'
+      puts 'Use only first letters of related colors.'
       false
     else
       true
@@ -126,9 +184,11 @@ end
 # LCycle: check_for_try_limit => check_for_win
 class Game
   include Gamemaster
+  include Messages
   def initialize
     @code = Codemaker.new
     @code_to_guess = @code.choose_code
+    @tries = 12
   end
 
   def guess_try
@@ -144,4 +204,5 @@ end
 # guess = Codebreaker.new
 # p guess.ask_for_guess(code)
 game = Game.new
-game.guess_try
+# game.guess_try
+game.print_status
