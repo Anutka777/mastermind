@@ -16,6 +16,8 @@ module Messages
 
     HEREDOC
     puts logo
+    puts "Computer made a #{@code.code_length}-piece code."
+    puts 'Try to guess it. Use first letters of colors. Examples: rgby, plbr.'
   end
 
   def print_rules
@@ -67,7 +69,7 @@ end
 
 # To to compare player guess with code, count key pegs
 # Meth: count_big_pegs, count_small_pegs
-module Gamemaster
+module CountMatchPegs
   # Match position AND color
   def self.count_big_pegs(guess, code_to_guess)
     big_pegs = 0
@@ -126,8 +128,6 @@ class Codebreaker
   end
 
   def ask_for_guess(code)
-    puts "Computer made a #{code.code_length}-piece code."
-    puts 'Try to guess it. Use first letters of colors. Examples: rgby, plbr.'
     loop do
       print '> '
       guess = gets.chomp.downcase
@@ -176,6 +176,24 @@ end
 # Meth: print_guess_table
 # LCycle: print_guess_table
 class Board
+  def initialize
+    @guess_table = {}
+    @turn_number = 0
+  end
+
+  def add_guess(guess, small_pegs, big_pegs)
+    @turn_number += 1
+    @guess_table[@turn_number] = [guess, small_pegs, big_pegs]
+  end
+
+  def print_guess_table
+    @guess_table.each_pair do |turn, guess|
+      puts <<~HEREDOC
+        -----------
+        Turn #{turn}: #{guess[0].join} -> #{guess[1]} matches #{guess[2]} of them exact.
+      HEREDOC
+    end
+  end
 end
 
 # To handle game flow - check tries number, determine win for the player
@@ -183,18 +201,23 @@ end
 # Meth: check_for_try_limit, check_for_win
 # LCycle: check_for_try_limit => check_for_win
 class Game
-  include Gamemaster
+  include CountMatchPegs
   include Messages
   def initialize
     @code = Codemaker.new
     @code_to_guess = @code.choose_code
     @tries = 12
+    @board = Board.new
   end
 
   def guess_try
+    print_status
     guess = Codebreaker.new.ask_for_guess(@code)
-    Gamemaster.count_small_pegs(guess, @code_to_guess)
-    Gamemaster.count_big_pegs(guess, @code_to_guess)
+    small_pegs = CountMatchPegs.count_small_pegs(guess, @code_to_guess)
+    big_pegs = CountMatchPegs.count_big_pegs(guess, @code_to_guess)
+    @board.add_guess(guess, small_pegs, big_pegs)
+    @board.print_guess_table
+    @tries -= 1
   end
 end
 
@@ -204,5 +227,7 @@ end
 # guess = Codebreaker.new
 # p guess.ask_for_guess(code)
 game = Game.new
-# game.guess_try
-game.print_status
+game.print_greet
+game.guess_try
+game.guess_try
+# game.print_status
