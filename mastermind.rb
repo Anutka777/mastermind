@@ -2,8 +2,6 @@
 
 # To greet player, explain rules, provide game status in text, show end game
 # message. Also display colors to chose from for player convinience
-# Meth: print_greet, print_rules, print_game_over, print_win, print_colors,
-# print_status
 module Messages
   def print_greet
     logo = <<~HEREDOC
@@ -68,7 +66,6 @@ module Messages
 end
 
 # To to compare player guess with code, count key pegs
-# Meth: count_big_pegs, count_small_pegs
 module CountMatchPegs
   # Match position AND color
   def self.count_big_pegs(guess, code_to_guess)
@@ -90,9 +87,6 @@ module CountMatchPegs
 end
 
 # To pick random color combination
-# Attr: color_set, code_length
-# Meth: single_random_color, choose_code
-# LCycle: single_random_color => choose_code
 class Codemaker
   attr_reader :color_set, :code, :code_length
 
@@ -117,9 +111,6 @@ class Codemaker
 end
 
 # To ask and get player's guess
-# Attr: color_set, code_length
-# Meth: ask_for_guess, validate_guess
-# LCycle: ask_for_guess => validate_guess
 class Codebreaker
   attr_reader :guess
 
@@ -172,18 +163,10 @@ class Codebreaker
 end
 
 # To show game current state - previous guess attempts with key pegs counted
-# Attr: guess_table
-# Meth: print_guess_table
-# LCycle: print_guess_table
 class Board
   def initialize
     @guess_table = {}
     @turn_number = 0
-  end
-
-  def add_guess(guess, small_pegs, big_pegs)
-    @turn_number += 1
-    @guess_table[@turn_number] = [guess, small_pegs, big_pegs]
   end
 
   def print_guess_table
@@ -194,21 +177,35 @@ class Board
       HEREDOC
     end
   end
+
+  # private
+
+  def add_guess(guess, small_pegs, big_pegs)
+    @turn_number += 1
+    @guess_table[@turn_number] = [guess, small_pegs, big_pegs]
+  end
 end
 
 # To handle game flow - check tries number, determine win for the player
-# Attr: try_number
-# Meth: check_for_try_limit, check_for_win
-# LCycle: check_for_try_limit => check_for_win
 class Game
   include CountMatchPegs
   include Messages
+  attr_reader :tries
+
   def initialize
     @code = Codemaker.new
     @code_to_guess = @code.choose_code
-    @tries = 12
+    @tries = 2
     @board = Board.new
   end
+
+  def play_game
+    until check_for_try_limit || check_for_win(guess_try)
+      @tries -= 1
+    end
+  end
+
+  private
 
   def guess_try
     print_status
@@ -217,17 +214,26 @@ class Game
     big_pegs = CountMatchPegs.count_big_pegs(guess, @code_to_guess)
     @board.add_guess(guess, small_pegs, big_pegs)
     @board.print_guess_table
-    @tries -= 1
+    return big_pegs
+  end
+
+  def check_for_try_limit
+    if @tries <= 0
+      print_game_over
+      true
+    else
+      false
+    end
+  end
+
+  def check_for_win(big_pegs)
+    if big_pegs == 4
+      print_win
+      return true
+    end
+    false
   end
 end
 
-# code = Codemaker.new
-# p code.single_random_color
-# p code.choose_code
-# guess = Codebreaker.new
-# p guess.ask_for_guess(code)
 game = Game.new
-game.print_greet
-game.guess_try
-game.guess_try
-# game.print_status
+game.play_game
