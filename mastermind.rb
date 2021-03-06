@@ -3,42 +3,62 @@
 # To greet player, explain rules, provide game status in text, show end game
 # message. Also display colors to chose from for player convinience
 module Messages
+  LOGO = <<~HEREDOC
+
+    ███    ███  █████  ███████ ████████ ███████ ██████  ███    ███ ██ ███    ██ ██████
+    ████  ████ ██   ██ ██         ██    ██      ██   ██ ████  ████ ██ ████   ██ ██   ██ 
+    ██ ████ ██ ███████ ███████    ██    █████   ██████  ██ ████ ██ ██ ██ ██  ██ ██   ██ 
+    ██  ██  ██ ██   ██      ██    ██    ██      ██   ██ ██  ██  ██ ██ ██  ██ ██ ██   ██ 
+    ██      ██ ██   ██ ███████    ██    ███████ ██   ██ ██      ██ ██ ██   ████ ██████  
+
+  HEREDOC
+
+  RULES = <<~HEREDOC
+
+    Colors of the game are red, blue, green, cyan, magenta, lime, pink, yellow.
+    Enter your guess using only first characters of related colors.
+    Each guess evaluated by two numbers. First one shows how many colors you
+    guessed right not concerning their possition in code. Second one shows
+    number of exact matches - right colors in right positions.
+
+    Take your time. Try to use as less turns as possible. Good luck!
+
+  HEREDOC
+
+  COLORS = <<~HEREDOC
+    Use following letters for colors
+    r for red
+    g for green
+    b for blue
+    y for yellow
+    c for cyan
+    m for magenta
+    l for lime
+    p for pink
+
+  HEREDOC
+
   def print_greet
-    logo = <<~HEREDOC
-
-      ███    ███  █████  ███████ ████████ ███████ ██████  ███    ███ ██ ███    ██ ██████
-      ████  ████ ██   ██ ██         ██    ██      ██   ██ ████  ████ ██ ████   ██ ██   ██ 
-      ██ ████ ██ ███████ ███████    ██    █████   ██████  ██ ████ ██ ██ ██ ██  ██ ██   ██ 
-      ██  ██  ██ ██   ██      ██    ██    ██      ██   ██ ██  ██  ██ ██ ██  ██ ██ ██   ██ 
-      ██      ██ ██   ██ ███████    ██    ███████ ██   ██ ██      ██ ██ ██   ████ ██████  
-
-    HEREDOC
-    puts logo
+    puts LOGO
     puts "Computer made a #{@code.code_length}-piece code."
     puts 'Try to guess it. Use first letters of colors. Examples: rgby, plbr.'
   end
 
   def print_rules
-    rules = <<~HEREDOC
+    puts <<~HEREDOC
+
       The object of the game is to guess a secret code consisting of a series of
       #{@code.code_length} colors pegs. Each guess results in narrowing down the
       possibilities of the code. You won the game if you manage to guess the
       code in less than #{@tries} tries.
-
-      Colors of the game are red, blue, green, cyan, magenta, lime, pink, yellow.
-      Enter your guess using only first characters of related colors.
-      Each guess evaluated by two numbers. First one shows how many colors you
-      guessed right not concerning their possition in code. Second one shows
-      number of exact matches - right colors in right positions.
-
-      Take your time. Try to use as less turns as possible. Good luck!
     HEREDOC
-    puts rules
+    puts RULES
   end
 
   def print_game_over
     puts 'You have no tries left, but don\'t give in to discouragement.'
     puts 'Come on! Try again. You\'ll definitely crack it next time!'
+    puts "The code was #{@code_to_guess.join}."
   end
 
   def print_win
@@ -46,18 +66,7 @@ module Messages
   end
 
   def print_colors
-    colors = <<~HEREDOC
-      Use following letters for colors
-      r for red
-      g for green
-      b for blue
-      y for yellow
-      c for cyan
-      m for magenta
-      l for lime
-      p for pink
-    HEREDOC
-    puts colors
+    puts COLORS
   end
 
   def print_status
@@ -195,14 +204,15 @@ class Game
   def initialize
     @code = Codemaker.new
     @code_to_guess = @code.choose_code
-    @tries = 2
+    @tries = 12
     @board = Board.new
   end
 
   def play_game
-    until check_for_try_limit || check_for_win(guess_try)
-      @tries -= 1
-    end
+    print_greet
+    print_rules
+    print_colors
+    @tries -= 1 until check_for_try_limit || check_for_win(guess_try)
   end
 
   private
@@ -214,7 +224,7 @@ class Game
     big_pegs = CountMatchPegs.count_big_pegs(guess, @code_to_guess)
     @board.add_guess(guess, small_pegs, big_pegs)
     @board.print_guess_table
-    return big_pegs
+    big_pegs
   end
 
   def check_for_try_limit
