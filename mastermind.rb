@@ -16,12 +16,16 @@ module Messages
   RULES = <<~HEREDOC
 
     Colors of the game are red, blue, green, cyan, magenta, lime, pink, yellow.
-    Enter your guess using only first characters of related colors.
-    Each guess evaluated by two numbers. First one shows how many colors you
-    guessed right not concerning their possition in code. Second one shows
-    number of exact matches - right colors in right positions.
+    You can play as the CODEBREAKER or the CODEMAKER.
 
-    Take your time. Try to use as less turns as possible. Good luck!
+    CODEBREAKER
+    Try to guess the code, chosen by a computer. Each guess evaluated by two
+    numbers. First one shows how many colors you guessed right not concerning
+    their possition in code. Second one shows number of exact matches - right
+    colors in right positions.
+
+    CODEMAKER
+    Try to choose the code, which cannot be broken by a computer.
 
   HEREDOC
 
@@ -38,31 +42,51 @@ module Messages
 
   HEREDOC
 
-  def print_greet
+  def print_logo
     puts LOGO
+  end
+
+  def print_intro
+    puts <<~HEREDOC
+
+      The object of the game is to guess a secret code consisting of a series of
+      #{@code.code_length} colors. Each guess results in narrowing down the
+      possibilities of the code. Codebreaker won the game if he manage to guess
+      the code in less than #{@tries} tries. Otherwise Codemaker is the winner.
+
+    HEREDOC
+  end
+
+  def print_greet_codebreaker
     puts "Computer made a #{@code.code_length}-piece code."
     puts 'Try to guess it. Use first letters of colors. Examples: rgby, plbr.'
   end
 
-  def print_rules
-    puts <<~HEREDOC
+  def print_greet_codemaker
+    puts "Choose a #{@code.code_length}-piece code."
+    puts 'Use first letters of colors. Examples: rgby, plbr.'
+  end
 
-      The object of the game is to guess a secret code consisting of a series of
-      #{@code.code_length} colors pegs. Each guess results in narrowing down the
-      possibilities of the code. You won the game if you manage to guess the
-      code in less than #{@tries} tries.
-    HEREDOC
+  def print_rules
     puts RULES
   end
 
-  def print_game_over
+  def print_game_over_codebreaker
     puts 'You have no tries left, but don\'t give in to discouragement.'
     puts 'Come on! Try again. You\'ll definitely crack it next time!'
     puts "The code was #{@code_to_guess.join}."
   end
 
-  def print_win
+  def print_game_over_codemaker
+    puts "Computer cracked your code with #{turn} tries."
+  end
+
+  def print_win_codebreaker
     puts "Well done! You managed to guess the code with #{@tries} tries left!"
+  end
+
+  def print_win_codemaker
+    puts 'Computer can\'t guess your code. You won the war against machines!'
   end
 
   def print_colors
@@ -70,7 +94,7 @@ module Messages
   end
 
   def print_status
-    puts "You have #{@tries} tries left."
+    puts "#{@tries} tries left."
   end
 end
 
@@ -96,7 +120,7 @@ module CountMatchPegs
 end
 
 # To pick random color combination
-class Codemaker
+class RandomCode
   attr_reader :color_set, :code, :code_length
 
   def initialize
@@ -119,28 +143,28 @@ class Codemaker
   end
 end
 
-# To ask and get player's guess
-class Codebreaker
-  attr_reader :guess
+# To ask and get player's code
+class CodeInput
+  attr_reader :code_input
 
   def initialize
-    @guess = ''
+    @code_input = ''
   end
 
   def ask_for_guess(code)
     loop do
       print '> '
-      guess = gets.chomp.downcase
-      break guess.chars if validate_guess_length(guess, code) &&
-                           validate_guess_duplicates(guess) &&
-                           validate_guess_content(guess, code)
+      code_input = gets.chomp.downcase
+      break code_input.chars if validate_input_length(code_input, code) &&
+                                validate_input_duplicates(code_input) &&
+                                validate_input_content(code_input, code)
     end
   end
 
   private
 
-  def validate_guess_length(guess, code)
-    if guess.length != code.code_length
+  def validate_input_length(code_input, code)
+    if code_input.length != code.code_length
       puts 'Make sure you entered correct number of letters.'
       false
     else
@@ -148,12 +172,12 @@ class Codebreaker
     end
   end
 
-  def validate_guess_content(guess, code)
-    guess_array = []
-    guess.each_char do |char|
-      guess_array.push(char) if code.color_set.join.include?(char)
+  def validate_input_content(code_input, code)
+    code_input_array = []
+    code_input.each_char do |char|
+      code_input_array.push(char) if code.color_set.join.include?(char)
     end
-    if guess_array.length != code.code_length
+    if code_input_array.length != code.code_length
       puts 'Use only first letters of related colors.'
       false
     else
@@ -161,9 +185,9 @@ class Codebreaker
     end
   end
 
-  def validate_guess_duplicates(guess)
-    if guess.chars.length != guess.chars.uniq.length
-      puts 'Computer was not allowed duplicates in code. Enter unique letters.'
+  def validate_input_duplicates(code_input)
+    if code_input.chars.length != code_input.chars.uniq.length
+      puts 'Duplicates are not allowed in code. Enter unique letters.'
       false
     else
       true
@@ -187,6 +211,14 @@ class Board
     end
   end
 
+  def print_single_guess
+    guess = @guess_table.values.last
+    puts <<~HEREDOC
+      -----------
+      #{guess[0].join} -> #{guess[1]} matches #{guess[2]} of them exact.
+    HEREDOC
+  end
+
   # private
 
   def add_guess(guess, small_pegs, big_pegs)
@@ -195,23 +227,24 @@ class Board
   end
 end
 
-# To handle game flow - check tries number, determine win for the player
-class Game
+# To handle game flow for Codebreaker mode - check tries number, determine win
+# for the player
+class GameBreaker
   include CountMatchPegs
   include Messages
   attr_reader :tries
 
   def initialize
-    @code = Codemaker.new
+    @code = RandomCode.new
     @code_to_guess = @code.choose_code
     @tries = 12
     @board = Board.new
   end
 
   def play_game
-    print_greet
+    print_logo
+    print_intro
     print_rules
-    print_colors
     @tries -= 1 until check_for_try_limit || check_for_win(guess_try)
   end
 
@@ -219,7 +252,7 @@ class Game
 
   def guess_try
     print_status
-    guess = Codebreaker.new.ask_for_guess(@code)
+    guess = CodeInput.new.ask_for_guess(@code)
     small_pegs = CountMatchPegs.count_small_pegs(guess, @code_to_guess)
     big_pegs = CountMatchPegs.count_big_pegs(guess, @code_to_guess)
     @board.add_guess(guess, small_pegs, big_pegs)
@@ -229,7 +262,7 @@ class Game
 
   def check_for_try_limit
     if @tries <= 0
-      print_game_over
+      print_game_over_codebreaker
       true
     else
       false
@@ -238,12 +271,54 @@ class Game
 
   def check_for_win(big_pegs)
     if big_pegs == 4
-      print_win
+      print_win_codebreaker
       return true
     end
     false
   end
 end
 
-game = Game.new
+# To handle game flow for Codemaker mode - count tries, determine win or lose
+# for computer
+class GameMaker < GameBreaker
+  def initialize
+    @code = RandomCode.new
+    @code_to_guess = CodeInput.new.ask_for_guess(@code)
+    @tries = 12
+    @board = Board.new
+  end
+
+  def guess_try
+    print_status
+    sleep 2
+    guess = RandomCode.new.choose_code
+    small_pegs = CountMatchPegs.count_small_pegs(guess, @code_to_guess)
+    big_pegs = CountMatchPegs.count_big_pegs(guess, @code_to_guess)
+    @board.add_guess(guess, small_pegs, big_pegs)
+    @board.print_single_guess
+    big_pegs
+  end
+
+  def check_for_try_limit
+    if @tries <= 0
+      print_win_codemaker
+      true
+    else
+      false
+    end
+  end
+
+  def check_for_win(big_pegs)
+    if big_pegs == 4
+      print_game_over_codemaker
+      return true
+    end
+    false
+  end
+end
+
+# game = GameBreaker.new
+# game.play_game
+# p game.code
+p game = GameMaker.new
 game.play_game
