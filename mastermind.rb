@@ -334,5 +334,5 @@ class Intro
   end
 end
 
-n = Intro.new
-n.start_game
+game = Intro.new
+game.start_game
