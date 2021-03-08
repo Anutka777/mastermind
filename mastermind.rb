@@ -15,7 +15,6 @@ module Messages
 
   RULES = <<~HEREDOC
 
-    Colors of the game are red, blue, green, cyan, magenta, lime, pink, yellow.
     You can play as the CODEBREAKER or the CODEMAKER.
 
     CODEBREAKER
@@ -30,6 +29,7 @@ module Messages
   HEREDOC
 
   COLORS = <<~HEREDOC
+    Colors of the game are red, blue, green, cyan, magenta, lime, pink, yellow.
     Use following letters for colors
     r for red
     g for green
@@ -237,14 +237,13 @@ class GameBreaker
   def initialize
     @code = RandomCode.new
     @code_to_guess = @code.choose_code
+    print_intro
+    print_greet_codebreaker
     @tries = 12
     @board = Board.new
   end
 
   def play_game
-    print_logo
-    print_intro
-    print_rules
     @tries -= 1 until check_for_try_limit || check_for_win(guess_try)
   end
 
@@ -283,6 +282,8 @@ end
 class GameMaker < GameBreaker
   def initialize
     @code = RandomCode.new
+    print_intro
+    print_greet_codemaker
     @code_to_guess = CodeInput.new.ask_for_guess(@code)
     @tries = 12
     @board = Board.new
@@ -317,8 +318,21 @@ class GameMaker < GameBreaker
   end
 end
 
-# game = GameBreaker.new
-# game.play_game
-# p game.code
-p game = GameMaker.new
-game.play_game
+# To greet player, choose game mode
+class Intro
+  include Messages
+  def start_game
+    print_logo
+    print_rules
+    puts 'Choose game mode you want to play (1- CODEMAKER/ 2 -CODEBEAKER)'
+    input = gets.chomp until %w[1 2].include?(input)
+    if input == '1'
+      GameMaker.new.play_game
+    else
+      GameBreaker.new.play_game
+    end
+  end
+end
+
+n = Intro.new
+n.start_game
